@@ -1,39 +1,46 @@
 """Rope — efficient string operations for text editors."""
 class Rope:
-    def __init__(self, text="", left=None, right=None):
-        self.left = left
-        self.right = right
-        self.text = text if not left and not right else ""
-        self.weight = len(text) if not left else self._calc_weight(left)
-
-    def _calc_weight(self, node):
-        if node.text: return len(node.text)
-        return node.weight + (self._calc_weight(node.right) if node.right else 0)
+    def __init__(self, text=""):
+        self.text = text
+        self.left = None
+        self.right = None
 
     def __len__(self):
-        if self.text: return len(self.text)
-        return len(self.left) + (len(self.right) if self.right else 0)
+        if self.text is not None and self.left is None:
+            return len(self.text)
+        l = len(self.left) if self.left else 0
+        r = len(self.right) if self.right else 0
+        return l + r
 
     def index(self, i):
-        if self.text: return self.text[i]
-        if i < self.weight: return self.left.index(i)
-        return self.right.index(i - self.weight)
+        if self.text is not None and self.left is None:
+            return self.text[i]
+        ll = len(self.left) if self.left else 0
+        if i < ll:
+            return self.left.index(i)
+        return self.right.index(i - ll)
 
     def __str__(self):
-        if self.text: return self.text
-        return str(self.left) + (str(self.right) if self.right else "")
+        if self.text is not None and self.left is None:
+            return self.text
+        return str(self.left or "") + str(self.right or "")
 
     @staticmethod
     def concat(r1, r2):
-        return Rope(left=r1, right=r2)
+        node = Rope.__new__(Rope)
+        node.text = None
+        node.left = r1
+        node.right = r2
+        return node
 
     def split(self, i):
-        if self.text:
+        if self.text is not None and self.left is None:
             return Rope(self.text[:i]), Rope(self.text[i:])
-        if i <= len(self.left):
+        ll = len(self.left) if self.left else 0
+        if i <= ll:
             l1, l2 = self.left.split(i)
             return l1, Rope.concat(l2, self.right) if self.right else l2
-        r1, r2 = self.right.split(i - len(self.left))
+        r1, r2 = self.right.split(i - ll)
         return Rope.concat(self.left, r1), r2
 
     def insert(self, i, text):
